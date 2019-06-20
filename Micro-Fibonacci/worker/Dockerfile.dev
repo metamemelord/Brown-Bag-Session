@@ -1,0 +1,7 @@
+FROM python:3.7-slim
+WORKDIR /worker
+
+
+RUN pip3 install redis
+COPY index.py .
+CMD [ "python3", "index.py" ]
