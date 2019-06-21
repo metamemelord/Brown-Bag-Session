@@ -3,13 +3,9 @@ services:
   postgres:
     image: "postgres:latest"
 
-  redis:
-    image: "redis:latest"
-
   api:
     depends_on:
       - postgres
-      - redis
     build: .
     volumes:
       - /app/node_modules
@@ -17,8 +13,6 @@ services:
     ports:
       - "80:3000"
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
       - PGUSER=postgres
       - PGHOST=postgres
       - PGDATABASE=postgres
