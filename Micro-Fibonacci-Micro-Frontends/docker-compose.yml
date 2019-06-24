@@ -30,3 +30,5 @@ services:
             context: ./Worker
         depends_on:
             - kafka
+        links:
+            - kafka
