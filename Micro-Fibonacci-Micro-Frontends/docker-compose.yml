@@ -22,6 +22,9 @@ services:
         environment:
             KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
             KAFKA_LISTENERS: PLAINTEXT://kafka:9092
+            KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+            KAFKA_ADVERTISED_PORT: 9092
+            KAFKA_ADVERTISED_HOST_NAME: kafka
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
     
@@ -32,3 +35,16 @@ services:
             - kafka
         links:
             - kafka
+    
+    input_service:
+        build:
+            context: ./SendIndex
+        depends_on:
+            - worker
+        links:
+            - worker
+        volumes:
+            - /app/node_modules
+            - ./SendIndex:/app
+        ports:
+            - "3000:3000"

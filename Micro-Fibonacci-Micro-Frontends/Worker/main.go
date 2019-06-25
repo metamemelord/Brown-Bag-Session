@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"os"
+	"os/signal"
 	"strconv"
 
-	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
+	"github.com/Shopify/sarama"
 )
 
 var done = []*big.Int{big.NewInt(0), big.NewInt(1)}
@@ -24,68 +26,85 @@ func fib(n int) *big.Int {
 	return done[n-1]
 }
 
-func makeDummyCall() {
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "kafka:9092"})
+func calculateAndAssignFib(n int) {
+	result := fib(n)
+	log.Printf("Calculated fib(%d)=%s\n", n, result.String())
+	config := sarama.NewConfig()
+	config.Producer.RequiredAcks = sarama.WaitForAll
+	config.Producer.Retry.Max = 10
+	config.Producer.Return.Successes = true
+
+	producer, err := sarama.NewAsyncProducer([]string{"kafka:9092"}, nil)
 	if err != nil {
-		log.Println("3 *************")
 		panic(err)
 	}
-	defer p.Close()
 
-	k := strconv.Itoa(12)
-	topic := "new_idx"
-	p.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic},
-		Value:          []byte(k),
-	}, nil)
+	defer func() {
+		if err := producer.Close(); err != nil {
+			log.Fatalln(err)
+		}
+	}()
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt)
+
+	producer.Input() <- &sarama.ProducerMessage{Topic: "index_ready", Key: nil, Value: sarama.StringEncoder(result.String())}
 }
 
-func calculateAndAssignFib(n int) {
-	calculationChannel := make(chan *big.Int)
-	go func(value int) {
-		calculationChannel <- fib(value)
-	}(n)
-	result := <-calculationChannel
-	log.Println("*******************************")
-	log.Println(result)
-	log.Println("*******************************")
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "kafka:9092"})
+// Test topic, will be deleted
+func testTopic() {
+	master, err := sarama.NewConsumer([]string{"kafka:9092"}, nil)
 	if err != nil {
-		log.Println("2 *************")
 		panic(err)
 	}
-	defer p.Close()
-	topic := "index_ready"
-	p.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic},
-		Value:          []byte(result.String()),
-	}, nil)
+
+	consumer, err := master.ConsumePartition("test_topic", 0, sarama.OffsetOldest)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer consumer.Close()
+
+	log.Println("Connected to temporary topic, polling now..")
+
+	for {
+		select {
+		case err := <-consumer.Errors():
+			fmt.Printf("Kafka error: %s\n", err)
+		case msg := <-consumer.Messages():
+			log.Println(string(msg.Value))
+		}
+	}
 }
 
 func main() {
-	makeDummyCall()
-	c, err := kafka.NewConsumer(&kafka.ConfigMap{"bootstrap.servers": "kafka:9092"})
-
+	go testTopic()
+	master, err := sarama.NewConsumer([]string{"kafka:9092"}, nil)
 	if err != nil {
-		log.Println("1 *************")
 		panic(err)
 	}
 
-	c.Subscribe("new_idx", nil)
+	consumer, err := master.ConsumePartition("new_idx", 0, sarama.OffsetOldest)
 
-	for {
-		msg, err := c.ReadMessage(-1)
-		if err == nil {
-			value, errValue := strconv.Atoi(string(msg.Value))
-			if errValue != nil {
-				panic(errValue)
-			}
-			go calculateAndAssignFib(value)
-		} else {
-			fmt.Printf("Consumer error: %v (%v)\n", err, msg)
-		}
+	if err != nil {
+		panic(err)
 	}
 
-	c.Close()
+	defer consumer.Close()
 
+	log.Println("Connected to kafka, polling for messages...")
+
+	for {
+		select {
+		case err := <-consumer.Errors():
+			fmt.Printf("Kafka error: %s\n", err)
+		case msg := <-consumer.Messages():
+			index, err := strconv.Atoi(string(msg.Value))
+			if err != nil {
+				continue
+			}
+			go calculateAndAssignFib(index)
+		}
+	}
 }
