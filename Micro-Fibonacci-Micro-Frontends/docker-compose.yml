@@ -1,12 +1,12 @@
 version: "3.4"
 
 services:
-    # nginx:
-    #     restart: always
-    #     build:
-    #         context: ./nginx
-    #     ports:
-    #         - "80:80"
+    nginx:
+        restart: always
+        build:
+            context: ./nginx
+        ports:
+            - "80:80"
 
     postgres:
         image:
@@ -31,6 +31,17 @@ services:
     db_service:
         build:
             context: ./DBConnector
+        depends_on:
+            - kafka
+            - postgres
+        links:
+            - kafka
+            - postgres
+        restart: on-failure:5
+    
+    db_index_service:
+        build:
+            context: ./SearchedIndices
         depends_on:
             - kafka
             - postgres
@@ -73,3 +84,16 @@ services:
             - ./PollAll:/app
         ports:
             - "3001:3000"
+            
+    poll_calculated_service:
+        build:
+            context: ./PollCalculated
+        depends_on:
+            - kafka
+        links:
+            - kafka
+        volumes:
+            - /app/node_modules
+            - ./PollCalculated:/app
+        ports:
+            - "3002:3000"

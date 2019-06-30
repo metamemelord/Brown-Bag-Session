@@ -29,6 +29,10 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"))
 })
 
+app.get("/script.js", (req, res) => {
+    res.sendFile(path.join(__dirname, "script.js"))
+})
+
 app.post("/api/idx", (req, res) => {
     const index = req.body.idx;
     if(!index) {

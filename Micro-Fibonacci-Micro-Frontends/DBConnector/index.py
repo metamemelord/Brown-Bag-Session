@@ -18,7 +18,6 @@ logger.warning("Starting polling kafka...")
 
 for message in consumer:
     entry = json.loads(message.value)
-    logger.error(entry)
     key = list(entry.keys())[0]
     value = entry[key]
     prep_query = ""
@@ -26,9 +25,10 @@ for message in consumer:
     if value.strip() == 'Calculating...':
         logger.warning("A new index has been added")
         cursor.execute("INSERT INTO values VALUES (%s, %s)", (key, value))
+        conn.commit()
 
     else:
         logger.warning('Saving fib({})={}'.format(key, value))
-        cursor.execute("UPDATE values SET value=%s WHERE number=%s", (value, key))
+        cursor.execute("INSERT INTO values VALUES (%s, %s) ON CONFLICT (number) DO UPDATE SET value=%s;", (key, value, value))
         conn.commit()
     

@@ -1,5 +1,5 @@
 FROM golang:alpine as builder
-RUN apk add git build-base
+RUN apk add build-base git
 RUN go get github.com/Shopify/sarama
 WORKDIR /app
 COPY main.go .

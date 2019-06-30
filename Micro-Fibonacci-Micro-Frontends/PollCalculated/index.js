@@ -21,8 +21,8 @@ app.get("/script.js", (req, res) => {
     res.sendFile(path.join(__dirname, "script.js"))
 })
 
-app.get("/api/poll-all", async (req, res) => {
-    const values = await db.query('SELECT * from indices');
+app.get("/api/poll-calc", async (req, res) => {
+    const values = await db.query('SELECT * from values order by number');
     res.send(values.rows);
 })
 
