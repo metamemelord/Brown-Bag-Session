@@ -23,10 +23,6 @@ const pgClient = new Pool({
 });
 pgClient.on("error", () => console.log("Lost PG connection"));
 
-exports.homeController = (req, res) => {
-  res.render("./main.ejs");
-};
-
 exports.pollAll = async (req, res) => {
   try {
     const values = await pgClient.query("SELECT * from values");
