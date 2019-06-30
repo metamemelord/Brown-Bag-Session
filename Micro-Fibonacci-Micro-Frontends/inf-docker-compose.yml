@@ -1,0 +1,26 @@
+version: "3.4"
+
+services:
+    postgres:
+        image:
+            postgres
+        ports:
+            - "5432:5432"
+        
+    zookeeper:
+        image: wurstmeister/zookeeper
+
+    kafka:
+        image: wurstmeister/kafka
+        depends_on:
+            - zookeeper
+        environment:
+            KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+            # KAFKA_LISTENERS: PLAINTEXT://localhost:9092
+            KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+            KAFKA_ADVERTISED_PORT: 9092
+            KAFKA_ADVERTISED_HOST_NAME: localhost
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        ports:
+            - "9092:9092"

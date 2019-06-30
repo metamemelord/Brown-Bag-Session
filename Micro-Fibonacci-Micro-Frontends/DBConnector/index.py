@@ -1,17 +1,19 @@
 import kafka
-from postgres import Postgres
+import psycopg2
 import logging
 import json
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger("DB Service")
 
-db = Postgres("postgres://postgres:postgres_password@postgres/postgres")
+conn = psycopg2.connect('dbname=postgres user=postgres password=postgres_password host=postgres port=5432')
+cursor = conn.cursor()
 logger.warning("Connected to Postgres. Running initial query...")
-db.run("CREATE TABLE IF NOT EXISTS values (number INT PRIMARY KEY, value VARCHAR(65535))")
+cursor.execute("CREATE TABLE IF NOT EXISTS values (number INT PRIMARY KEY, value VARCHAR(65535))")
+conn.commit()
 logger.warning("Done")
 
+input("Press enter to connect to Kafka")
 consumer = kafka.KafkaConsumer('save_to_db', bootstrap_servers=["kafka:9092"], enable_auto_commit=True)
-
 logger.warning("Starting polling kafka...")
 
 for message in consumer:
@@ -19,11 +21,14 @@ for message in consumer:
     logger.error(entry)
     key = list(entry.keys())[0]
     value = entry[key]
-    query = ""
+    prep_query = ""
+
     if value.strip() == 'Calculating...':
-        query = 'INSERT into values ({}, {});'.format(key, value)
+        logger.warning("A new index has been added")
+        cursor.execute("INSERT INTO values VALUES (%s, %s)", (key, value))
+
     else:
         logger.warning('Saving fib({})={}'.format(key, value))
-        query = 'UPDATE values set value={} where number={};'.format(value, key)
-    db.run(query)
-    logger.warning(db.run("SELECT * from values;"))
+        cursor.execute("UPDATE values SET value=%s WHERE number=%s", (value, key))
+        conn.commit()
+    
