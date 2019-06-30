@@ -12,7 +12,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS values (number INT PRIMARY KEY, value
 conn.commit()
 logger.warning("Done")
 
-input("Press enter to connect to Kafka")
+logger.warning("Press enter to connect to Kafka")
 consumer = kafka.KafkaConsumer('save_to_db', bootstrap_servers=["kafka:9092"], enable_auto_commit=True)
 logger.warning("Starting polling kafka...")
 
