@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.js"></script>
+    <title>Document</title>
+    <style lang="scss" scoped>
+        #app {
+            font-family: 'Avenir', Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-align: center;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div v-if="enteredIndices.length">
+            <h3>Entered indices:</h3>
+            <span v-for="(value, idx) in enteredIndices" :key="idx">{{value}}</span>
+        </div>
+    </div>
+    <script>
+            new Vue({
+                el: "#app",
+                data: {
+                    enteredIndices: [],
+                    intervalId: -1
+                },
+                methods: {
+                    async poolAll() {
+                        const response = await axios.get('/api/poll-all');
+                        this.enteredIndices = response.data.map(number => number.number);
+                    }
+                },
+                mounted() {
+                    this.poolAll()
+                    this.intervalId = setInterval(() => {
+                        this.poolAll()
+                    }, 2000);
+                },
+                beforeDestroy() {
+                    clearInterval(this.intervalId);
+                    this.intervalId = -1;
+                }
+            });
+        </script>
+</body>
+
+</html>

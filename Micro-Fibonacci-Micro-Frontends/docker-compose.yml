@@ -8,17 +8,17 @@ services:
     #     ports:
     #         - "80:80"
 
+    postgres:
+        image:
+            postgres
+        
     zookeeper:
         image: wurstmeister/zookeeper
-        ports:
-            - "2181:2181"
 
     kafka:
         image: wurstmeister/kafka
         depends_on:
             - zookeeper
-        ports:
-            - "9092"
         environment:
             KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
             KAFKA_LISTENERS: PLAINTEXT://kafka:9092
@@ -28,6 +28,17 @@ services:
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
     
+    db_service:
+        build:
+            context: ./DBConnector
+        depends_on:
+            - kafka
+            - postgres
+        links:
+            - kafka
+            - postgres
+        restart: on-failure:5
+
     worker:
         build:
             context: ./Worker
@@ -35,16 +46,30 @@ services:
             - kafka
         links:
             - kafka
+        restart: on-failure:5
     
     input_service:
         build:
             context: ./SendIndex
         depends_on:
-            - worker
+            - kafka
         links:
-            - worker
+            - kafka
         volumes:
             - /app/node_modules
             - ./SendIndex:/app
         ports:
             - "3000:3000"
+    
+    poll_all_service:
+        build:
+            context: ./PollAll
+        depends_on:
+            - kafka
+        links:
+            - kafka
+        volumes:
+            - /app/node_modules
+            - ./PollAll:/app
+        ports:
+            - "3001:3000"

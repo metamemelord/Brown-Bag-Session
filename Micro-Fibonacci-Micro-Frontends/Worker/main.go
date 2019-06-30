@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/big"
@@ -34,7 +35,7 @@ func calculateAndAssignFib(n int) {
 	config.Producer.Retry.Max = 10
 	config.Producer.Return.Successes = true
 
-	producer, err := sarama.NewAsyncProducer([]string{"kafka:9092"}, nil)
+	producer, err := sarama.NewAsyncProducer([]string{"kafka:9092"}, config)
 	if err != nil {
 		panic(err)
 	}
@@ -47,8 +48,13 @@ func calculateAndAssignFib(n int) {
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
-
-	producer.Input() <- &sarama.ProducerMessage{Topic: "index_ready", Key: nil, Value: sarama.StringEncoder(result.String())}
+	m := make(map[int]string)
+	m[n] = result.String()
+	message, err := json.Marshal(m)
+	if err != nil {
+		panic(err)
+	}
+	producer.Input() <- &sarama.ProducerMessage{Topic: "save_to_db", Key: nil, Value: sarama.StringEncoder(message)}
 }
 
 // Test topic, will be deleted
@@ -80,12 +86,13 @@ func testTopic() {
 
 func main() {
 	go testTopic()
+
 	master, err := sarama.NewConsumer([]string{"kafka:9092"}, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	consumer, err := master.ConsumePartition("new_idx", 0, sarama.OffsetOldest)
+	consumer, err := master.ConsumePartition("new_idx", 0, sarama.OffsetNewest)
 
 	if err != nil {
 		panic(err)

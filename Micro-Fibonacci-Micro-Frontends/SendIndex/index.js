@@ -36,6 +36,10 @@ app.post("/api/idx", (req, res) => {
     }
     const buf = Buffer.from(index.toString(), 'utf8');
     producer.produce('new_idx', -1, buf, null, new Date().getTime(), "");
+    entry = {}
+    entry[index.toString()] = "Calculating..."
+    producer.produce('save_to_db', -1, Buffer.from(JSON.stringify(entry)), null, new Date().getTime(), "");
+    res.send("OK")
 })
 
 app.listen(3000, (err) => {
