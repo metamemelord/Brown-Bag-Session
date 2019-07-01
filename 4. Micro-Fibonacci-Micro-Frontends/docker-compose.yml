@@ -7,6 +7,14 @@ services:
             context: ./nginx
         ports:
             - "80:80"
+        depends_on:
+            - input_service
+            - poll_all_service
+            - poll_calculated_service
+        links:
+            - input_service
+            - poll_all_service
+            - poll_calculated_service
 
     postgres:
         image:

@@ -6,7 +6,7 @@ new Vue({
     },
     methods: {
         async poolCalculated() {
-            const response = await axios.get('/api/poll-calc');
+            const response = await axios.get('/all/api/poll-calc');
             this.calculatedValues = response.data
         }
     },

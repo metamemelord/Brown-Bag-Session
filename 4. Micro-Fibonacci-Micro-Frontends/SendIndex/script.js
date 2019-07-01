@@ -5,8 +5,8 @@ new Vue({
     },
     methods: {
         async submit() {
-            if (this.number > 2000) return;
-            axios.post("/api/idx", {
+            if (this.number > 250000) return;
+            axios.post("/inp/api/idx", {
                 idx: this.number
             })
                 .then(() => {

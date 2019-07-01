@@ -6,7 +6,7 @@ new Vue({
     },
     methods: {
         async poolAll() {
-            const response = await axios.get('/api/poll-all');
+            const response = await axios.get('/indexes/api/poll-all');
             this.enteredIndices = response.data.map(number => number.number);
         }
     },
