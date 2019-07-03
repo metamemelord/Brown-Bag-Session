@@ -69,13 +69,13 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
+app.get("/Arch-monolith.jpg", (req, res) => {
+  res.sendFile(path.join(__dirname, "Arch-monolith.jpg"));
+});
+
 app.get("/script.js", (req, res) => {
   res.sendFile(path.join(__dirname, "script.js"));
 });
-
-//   app.get("/Arch-monolith.png", (req, res) => {
-//     res.sendFile(path.join(__dirname, "Arch-monolith.png"));
-//   });
 
 app.get("/api/poll-all", pollAll); // For polling all indices
 app.get("/api/poll-calc", pollCalculated); // For polling all calculated values
